@@ -48,7 +48,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_DATABASE=users
+      - MYSQL_DATABASE=transaction-challenge
       - MYSQL_ROOT_PASSWORD=root
     networks:
       backend:

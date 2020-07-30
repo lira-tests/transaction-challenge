@@ -5,9 +5,12 @@
     "license": "MIT",
     "type": "project",
     "require": {
-        "php": "^7.2.5",
+        "php": "^7.4",
+        "guzzlehttp/guzzle": "^7.0",
+        "illuminate/redis": "^7.22",
         "laravel/lumen-framework": "^7.0",
-        "laravel/tinker": "^2.4"
+        "laravel/tinker": "^2.4",
+      "ext-bcmath": "*"
     },
     "require-dev": {
         "fzaninotto/faker": "^1.9.1",

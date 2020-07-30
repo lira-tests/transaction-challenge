@@ -50,7 +50,7 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
-        $parentRender = parent::render($request, $exception);
+        return parent::render($request, $exception);
 
         if ($parentRender instanceof JsonResponse) {
             return $parentRender;

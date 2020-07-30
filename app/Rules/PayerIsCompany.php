@@ -9,7 +9,7 @@ class PayerIsCompany implements Rule
 {
     public function passes($attribute, $value)
     {
-        $user = User::find($value);
+        $user = User::findOrFail($value);
         return ($user->type === User::TYPE_PERSON);
     }
 
