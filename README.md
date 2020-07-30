@@ -16,3 +16,35 @@ Antes de finalizar a transferência, deve-se consultar um serviço autorizador e
 - A operação de transferência deve ser uma transação (ou seja, revertida em qualquer caso de inconsistência) e o dinheiro deve voltar para a carteira do usuário que envia.
 
 - No recebimento de pagamento, o usuário ou lojista precisa receber notificação enviada por um serviço de terceiro e eventualmente este serviço pode estar indisponível/instável. Use este mock para simular o envio (<https://run.mocky.io/v3/b19f7b9f-9cbf-4fc6-ad22-dc30601aec04>)
+
+## Como estruturei
+
+- Criar a estrutura básica do projeto
+    - Framework: Laravel
+    - Docker (Nginx, PHP 7.4, MySQL 5.7, Redis).
+- Foquei nas regras de negócio para criar as migrações e também as validações.
+- Criar o processo a princípio síncrono e depois o tornar assíncrono.
+
+## Rodando
+
+1. `docker-compose up -d`
+1. `docker-compose exec app composer install`
+1. `docker-compose exec app php artisan migrate`
+1. `docker-compose exec app php artisan db:seed`
+1. `docker-compose exec app php artisan queue:listen --timeout=60 --sleep=3  --tries=3`
+
+## Endpoints
+
+`http://localhost:8000/v1/users` **GET**
+
+`http://localhost:8000/v1/transactions` **POST**
+
+Raw:
+
+```json
+{
+    "payer": "6763ecf4-7af8-4977-bac4-9daa091f6ef3",
+    "payee": "38ac4663-8ca7-41db-835c-cb55820f131c",
+    "amount": 10.99
+}
+```
