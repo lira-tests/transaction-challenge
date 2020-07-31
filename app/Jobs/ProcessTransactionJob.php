@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Exceptions\AuthorizationFailException;
+use App\Exceptions\PayerInsufficientAmountException;
 use App\Jobs\Job;
 use App\Models\Transaction;
 use App\Models\User;
@@ -16,9 +17,15 @@ class ProcessTransactionJob extends Job
 
     protected AuthorizationService $authorizationService;
 
+    protected User $payer;
+
+    protected User $payee;
+
     public function __construct(Transaction $transaction)
     {
         $this->transaction = $transaction;
+        $this->payer = $this->getUser($transaction->payer->id);
+        $this->payee = $this->getUser($transaction->payee->id);
         $this->authorizationService = new AuthorizationService();
     }
 
@@ -26,45 +33,73 @@ class ProcessTransactionJob extends Job
         try {
             DB::beginTransaction();
 
+            $this->updateUsers();
+
             if (!$this->authorizationService->approved($this->transaction->id)) {
                 throw new AuthorizationFailException();
             }
 
-            $payerObj = User::with('wallets')->findOrFail($this->transaction->payer_user_id);
-            $payeeObj = User::with('wallets')->findOrFail($this->transaction->payee_user_id);
+            if ($this->transaction->amount > $this->payer->wallets->amount) {
+                throw new PayerInsufficientAmountException();
+            }
 
-            $payeeObj->wallets->amount = bcadd($payeeObj->wallets->amount, $this->transaction->amount, 2);
-            $payerObj->wallets->amount = bcsub($payerObj->wallets->amount, $this->transaction->amount, 2);
+            $this->updateWallets();
 
-            $payeeObj->push();
-            $payerObj->push();
-
-            $this->transaction->status = Transaction::STATUS_EXECUTED;
-            $this->transaction->reason = 'Success';
-            $this->transaction->save();
+            $this->updateTransaction(Transaction::STATUS_EXECUTED, 'Success');
 
             DB::commit();
 
             Log::info(sprintf('Transaction %s executed with %s', $this->transaction->id, 'success'));
 
-            dispatch(new NotifyJobQueue(['to' => $payerObj->email, 'message' => 'Your payment was confirmed']));
-            dispatch(new NotifyJobQueue(['to' => $payeeObj->email, 'message' => 'You received a payment']));
+            dispatch(new NotifyJobQueue(['to' => $this->payer->email, 'message' => 'Your payment was confirmed']));
+            dispatch(new NotifyJobQueue(['to' => $this->payee->email, 'message' => 'You received a payment']));
 
             return true;
         } catch(\Throwable $e) {
             DB::rollBack();
 
-            $payerObj = User::with('wallets')->findOrFail($this->transaction->payer_user_id);
-
-            $this->transaction->status = Transaction::STATUS_FAILED;
-            $this->transaction->reason = $e->getMessage();
-            $this->transaction->save();
+            $this->updateTransaction(Transaction::STATUS_FAILED, $e->getMessage());
 
             Log::info(sprintf('Transaction %s executed with %s', $this->transaction->id, 'fail'));
 
-            dispatch(new NotifyJobQueue(['to' => $payerObj->email, 'message' => 'Your payment was failed']));
+            dispatch(new NotifyJobQueue(['to' => $this->payer->email, 'message' => 'Your payment was failed']));
 
             throw $e;
         }
+    }
+
+    protected function getUser($id) : User
+    {
+        return User::with('wallets')->findOrFail($id);
+    }
+
+    protected function updateUsers()
+    {
+        $this->payer->refresh();
+        $this->payee->refresh();
+    }
+
+    protected function updateWallets()
+    {
+        $this->payee->wallets->amount = bcadd(
+            $this->payee->wallets->amount,
+            $this->transaction->amount,
+            2
+        );
+        $this->payer->wallets->amount = bcsub(
+            $this->payer->wallets->amount,
+            $this->transaction->amount,
+            2
+        );
+
+        $this->payee->push();
+        $this->payer->push();
+    }
+
+    protected function updateTransaction($status, $reason) : void
+    {
+        $this->transaction->status = $status;
+        $this->transaction->reason = $reason;
+        $this->transaction->save();
     }
 }

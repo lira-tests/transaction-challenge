@@ -63,8 +63,4 @@ class TransactionController extends Controller
         return $transaction;
     }
 
-    public function rollback(Request $request)
-    {
-        return ['todo'];
-    }
 }
