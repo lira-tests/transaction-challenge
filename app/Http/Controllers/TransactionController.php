@@ -19,17 +19,10 @@ class TransactionController extends Controller
 
     protected LoggerInterface $log;
 
-    protected $notificationService;
-
-    public function __construct(
-        Transaction $transaction,
-        LoggerInterface $log,
-        NotificationService $notificationService
-    )
+    public function __construct(Transaction $transaction, LoggerInterface $log)
     {
         $this->transaction = $transaction;
         $this->log = $log;
-        $this->notificationService = $notificationService;
     }
 
     public function index()
@@ -68,5 +61,10 @@ class TransactionController extends Controller
         dispatch(new ProcessTransactionJob($transaction));
 
         return $transaction;
+    }
+
+    public function rollback(Request $request)
+    {
+        return ['todo'];
     }
 }

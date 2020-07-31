@@ -32,6 +32,8 @@ Antes de finalizar a transferência, deve-se consultar um serviço autorizador e
 1. `docker-compose exec app php artisan migrate`
 1. `docker-compose exec app php artisan db:seed`
 1. `docker-compose exec app php artisan queue:listen --timeout=60 --sleep=3  --tries=3`
+1. `docker-compose exec db mysql -proot -e 'DROP DATABASE IF EXISTS testing; CREATE DATABASE testing'`
+1. `docker-compose exec app ./vendor/bin/phpunit`
 
 ## Endpoints
 
@@ -48,3 +50,12 @@ Raw:
     "amount": 10.99
 }
 ```
+## Fluxos
+
+![Fluxos](https://i.ibb.co/8NfcTbk/fluxo-transaction-challenge.png)
+
+## Referências
+
+https://laravel.com/docs/7.x/
+
+https://lumen.laravel.com/docs/7.x
