@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\App\Http\Controller;
 
 use App\Models\User;
 use Laravel\Lumen\Testing\DatabaseMigrations;
